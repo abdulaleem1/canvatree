@@ -195,23 +195,32 @@ class Tree {
     let zoomFactor = 0;
     if (event.wheelDelta > 0) {
       this.zoomLevel += 0.1;
+      this.reCenterTreeToCursor(ev,'in');
     } else {
       this.zoomLevel -= 0.1;
+      this.reCenterTreeToCursor(ev,'out');
+
     }
 
+    
   }
 
-  reCenterTreeToCursor(ev) {
-    for (let index = 0; index < this.treeData.length; index++) {
-      const node = this.treeData[index];
-      const { x, y } = ev;
-      node.zoomReferencePoint = { x, y };
-      ev.x > node.getNodeX()
-        ? (node.zoomXDirection = "left")
-        : (node.zoomXDirection = "right");
-      ev.y > node.getNodeY()
-        ? (node.zoomYDirection = "up")
-        : (node.zoomYDirection = "down");
+  reCenterTreeToCursor(ev,direction) {
+    const mouseAfterZoomX = this.mouseContext.x * 1.1;
+    const mouseAfterZoomY = this.mouseContext.y * 1.1;
+
+    const mouseZoomOffsetX = mouseAfterZoomX - this.mouseContext.x;
+    const mouseZoomOffsetY = mouseAfterZoomY - this.mouseContext.y;
+
+    console.log(mouseZoomOffsetX,mouseZoomOffsetY);
+
+    if(direction === 'in'){
+      this.panX -=mouseZoomOffsetX;
+      this.panY -=mouseZoomOffsetY;
+    }else{
+      this.panX +=mouseZoomOffsetX;
+      this.panY +=mouseZoomOffsetY;
+
     }
   }
 
