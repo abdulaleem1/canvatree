@@ -3,18 +3,86 @@ import Node from "./Node.js";
 
 let options = {
   data: [
-    new Node(1, "First Node", 500, 200, 0),
-    new Node(2, "Second Node", 300, 400, 1),
-    new Node(3, "Third Node", 700, 400, 1),
-    // new Node(4, "Third Node", 700, 500, 1),
-    // new Node(5, "Third Node", 700, 600, 1),
-    // new Node(6, "Third Node", 700, 700, 2),
-    // new Node(7, "Third Node", 700, 800, 2),
-    // new Node(8, "Third Node", 700, 900, 1),
-    // new Node(9, "Third Node", 700, 1000, 6),
-    // new Node(10, "Third Node", 700, 1100, 9),
-    // new Node(11, "Third Node", 700, 1200, 1),
-    // new Node(12, "Third Node", 700, 1300, 11),
+    {
+      id: 1,
+      text: "First Node",
+      parentId: 0,
+    },
+    {
+      id: 2,
+      text: "Second Node",
+      parentId: 1,
+    },
+    {
+      id: 3,
+      text: "Third Node",
+      parentId: 1,
+    },
+    {
+      id: 4,
+      text: "Fourth Node",
+      parentId: 1,
+    },
+    {
+      id: 5,
+      text: "Fifth Node",
+      parentId: 3,
+    },
+    {
+      id: 6,
+      text: "Sixth Node",
+      parentId: 1,
+    },
+    {
+      id: 7,
+      text: "Seventh Node",
+      parentId: 6,
+    },
+    {
+      id: 8,
+      text: "Eighth Node",
+      parentId: 1,
+    },
+    {
+      id: 9,
+      text: "Ninth Node",
+      parentId: 4,
+    },
+    {
+      id: 10,
+      text: "Tenth Node",
+      parentId: 6,
+    },
+    {
+      id: 11,
+      text: "Eleventh Node",
+      parentId: 6,
+    },
+    {
+      id: 12,
+      text: "Twelth Node",
+      parentId: 8,
+    },
+    {
+      id: 13,
+      text: "Twelth Node",
+      parentId: 8,
+    },
+    {
+      id: 14,
+      text: "Twelth Node",
+      parentId: 5,
+    },
+    {
+      id: 15,
+      text: "Twelth Node",
+      parentId: 4,
+    },
+    {
+      id: 16,
+      text: "Twelth Node",
+      parentId: 4,
+    }
   ],
   zoomControl: true,
 };
