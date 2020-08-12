@@ -1,7 +1,7 @@
-import Helper from "./Helper.js";
+import Helper from "./Helpers/Helper.js";
 import Node from "./Node.js";
 import TreeData from "./TreeData.js";
-
+import DrawHelper from "./Helpers/DrawHelper.js";
 /**
  * Tree Class
  *
@@ -19,6 +19,7 @@ class Tree {
     NONE: -1,
     PANNING: 7,
     ZOOMING: 8,
+    CONTROL_HOVERED: 9,
   };
   constructor(containerId, options) {
     this.canvas = null;
@@ -28,8 +29,8 @@ class Tree {
     this.secondaryState = Tree.states.NONE;
     this.mouseContext = new MouseContext();
     this.stateBasedCursor = {
-      0: "default",
-      // 4: "move",
+      0: "move",
+      9: "pointer",
       5: "grab",
       // 7: "move",
     };
@@ -37,6 +38,8 @@ class Tree {
     this.container = document.getElementById(containerId);
     this.panX = 0;
     this.panY = 0;
+    this.controls = [];
+    this.CONTROLS_RADIUS = 10;
 
     if (!this.container) {
       console.error("Element not found!");
@@ -44,7 +47,9 @@ class Tree {
 
     this.initCanvas();
 
-    this.treeData.calculateNodePositions(this.canvas.width,this.canvas.height);
+    this.treeData.calculateNodePositions(this.canvas.width, this.canvas.height);
+
+    this.initControls();
 
     this.initEvents();
 
@@ -83,6 +88,33 @@ class Tree {
     this.context.textBaseline = "middle";
     this.context.fillStyle = "#ffffff";
   }
+
+  /**
+   * Add Controls to the canvas
+   */
+  initControls() {
+    this.controls.push({
+      title: "Fit to Canvas",
+      x: this.canvas.width - 50,
+      y: 50,
+      action: () => this.zoomToFit(),
+    });
+  }
+  
+  /**
+   *Draw the controls to the canvas 
+   */
+  drawControls() {
+    this.controls.forEach((c) =>
+      DrawHelper.fillCircle(
+        this.context,
+        c.x,
+        c.y,
+        this.CONTROLS_RADIUS,
+        "white"
+      )
+    );
+  }
   /**
    * Fits the tree in the view port
    */
@@ -100,15 +132,18 @@ class Tree {
       (rightMostNode.x +
         rightMostNode.width +
         this.treeData.SPACING_BETWEEN_NODES);
+
+    this.panX = 0;
+    this.panY = 0;
   }
   /**
    * Adds new Node to the tree data and adjusts zoomlevels
    * @param {Node} node
    *
-   * 
+   *
    */
   addNodeHandler(node) {
-    this.treeData.addNode(node,false);
+    this.treeData.addNode(node, false);
 
     this.zoomToFit();
   }
@@ -118,7 +153,7 @@ class Tree {
    *
    * @param {Node} node
    *
-   * 
+   *
    */
   drawNode(node) {
     node.zoomLevel = this.zoomLevel;
@@ -138,25 +173,15 @@ class Tree {
     node.calculateCenter();
 
     this.context.fillStyle = "#ffffff";
-    this.context.fillText(
-      `${node.text}, ${node.order}`,
-      node.nodeCenter.x,
-      node.nodeCenter.y
-    ); //, ${node.level}, ${node.extendedOrder},  ${node.order}
+    this.context.fillText(`${node.text}`, node.nodeCenter.x, node.nodeCenter.y); //, ${node.level}, ${node.extendedOrder},  ${node.order}
 
-    this.context.fillStyle =
-      node.state === Tree.states.CONNECTOR_HOVERED ? "red" : "lightgreen";
-
-    this.context.beginPath();
-    this.context.arc(
+    DrawHelper.fillCircle(
+      this.context,
       node.connectorCenter.x,
       node.connectorCenter.y,
       node.getNodeConnectorRadius(),
-      0,
-      2 * Math.PI
+      node.state === Tree.states.CONNECTOR_HOVERED ? "red" : "lightgreen"
     );
-    this.context.fill();
-    this.context.stroke();
 
     if (node.parentId > 0) {
       const parent = this.treeData.getParent(node);
@@ -207,6 +232,8 @@ class Tree {
 
     this.treeData.getData().forEach((node) => this.drawNode(node));
 
+    this.drawControls();
+
     this.drawDebugInfo();
 
     this.setCursor();
@@ -236,6 +263,16 @@ class Tree {
 
       this.startPanX = ev.x;
       this.startPanY = ev.y;
+
+      const controlClicked = this.controls.find(
+        (c) => c.state === Tree.states.CONTROL_HOVERED
+      );
+
+      if (controlClicked) {
+        console.log("clicked", controlClicked);
+
+        controlClicked.action();
+      }
     };
 
     this.canvas.onmouseup = (ev) => (
@@ -262,7 +299,7 @@ class Tree {
    *
    * @param {Event} ev
    *
-   * 
+   *
    */
   handleCanvasClick(ev) {
     // this.addNode.apply(this, [
@@ -276,16 +313,16 @@ class Tree {
 
   /**
    * Mouse Scroll handler
-   * 
+   *
    * @param {WheelEvent} ev
    *
-   * 
+   *
    */
   handleMouseWheel(ev) {
     const MIN_ZOOM = 1,
       MAX_ZOOM = 3;
     let zoomFactor = 0;
-    
+
     if (ev.wheelDelta > 0) {
       this.zoomLevel += 0.1;
       this.reCenterTreeToCursor(ev, "in");
@@ -303,7 +340,7 @@ class Tree {
    * @param {Event} ev
    * @param {*} direction  - Zoom in/ Zoom out
    *
-   * 
+   *
    */
   reCenterTreeToCursor(ev, direction) {
     const mouseAfterZoomX = this.mouseContext.x * 1.1;
@@ -342,10 +379,10 @@ class Tree {
 
   /**
    * Mouse Move Handler
-   * 
+   *
    * @param {MouseEvent} ev
    *
-   * 
+   *
    */
   mouseMove(ev) {
     this.secondaryState === Tree.states.MOVING_NODE && this.moveNode(ev);
@@ -360,7 +397,7 @@ class Tree {
    *
    * @param {MouseEvent} ev
    *
-   * 
+   *
    */
   pan(ev) {
     // const last = { ...this.mouseContext };
@@ -405,6 +442,21 @@ class Tree {
           (this.primaryState = Tree.states.CONNECTOR_HOVERED));
       }
     });
+
+    for (let i = 0; i < this.controls.length; i++) {
+      const control = this.controls[i];
+      control.state = Tree.states.IDLE;
+      // this.primaryState = Tree.states.IDLE;
+      if (
+        this.mouseContext.x > control.x - this.CONTROLS_RADIUS &&
+        this.mouseContext.x < control.x + this.CONTROLS_RADIUS &&
+        this.mouseContext.y > control.y - this.CONTROLS_RADIUS &&
+        this.mouseContext.y < control.y + this.CONTROLS_RADIUS
+      ) {
+        control.state = Tree.states.CONTROL_HOVERED;
+        this.primaryState = Tree.states.CONTROL_HOVERED;
+      }
+    }
   }
 }
 
@@ -421,9 +473,9 @@ class MouseContext {
 
   /**
    * Updates the x and y position
-   * 
-   * @param {Number} x 
-   * @param {Number} y 
+   *
+   * @param {Number} x
+   * @param {Number} y
    */
   updatePosition(x, y) {
     this.x = x;

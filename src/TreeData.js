@@ -1,4 +1,4 @@
-import Helper from "./Helper.js";
+import Helper from "./Helpers/Helper.js";
 import Node from "./Node.js";
 
 /**
