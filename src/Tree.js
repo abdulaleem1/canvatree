@@ -40,6 +40,7 @@ class Tree {
     this.panY = 0;
     this.controls = [];
     this.CONTROLS_RADIUS = 10;
+    this.ANIMATION_SPEED = 3;
 
     if (!this.container) {
       console.error("Element not found!");
@@ -55,10 +56,12 @@ class Tree {
 
     this.primaryState = Tree.states.INITIALIZED;
 
-    this.startDrawLoop();
+
 
     // this.setupTree(options.data);
     this.zoomToFit();
+
+    this.renderContent(true);
 
     this.primaryState = Tree.states.RENDERED;
   }
@@ -135,6 +138,8 @@ class Tree {
 
     this.panX = 0;
     this.panY = 0;
+
+    this.renderContent();
   }
   /**
    * Adds new Node to the tree data and adjusts zoomlevels
@@ -156,9 +161,8 @@ class Tree {
    *
    */
   drawNode(node) {
-    node.zoomLevel = this.zoomLevel;
-    node.panX = this.panX;
-    node.panY = this.panY;
+
+
 
     //draw node body
     this.context.fillStyle =
@@ -170,7 +174,6 @@ class Tree {
       node.getNodeHeight()
     );
 
-    node.calculateCenter();
 
     this.context.fillStyle = "#ffffff";
     this.context.fillText(`${node.text}`, node.nodeCenter.x, node.nodeCenter.y); //, ${node.level}, ${node.extendedOrder},  ${node.order}
@@ -223,22 +226,68 @@ class Tree {
    *
    * Draws all nodes,debug info and check for mouse and node overlap
    */
-  startDrawLoop() {
+  renderContent(animate = false) {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.context.font = 20 * this.zoomLevel + "px Montserrat";
 
-    this.mouseNodeOverlapDetection();
 
-    this.treeData.getData().forEach((node) => this.drawNode(node));
 
+    this.treeData.getData().forEach((node) => {
+      node.zoomLevel = this.zoomLevel;
+      node.panX = this.panX;
+      node.panY = this.panY;
+      node.calculateCenter();
+
+      if(animate){
+        let rootNode = this.treeData.getRootNode();
+        if(node.stepX === null && node.stepY === null){
+
+          let startX = rootNode.getNodeX(),
+              startY = rootNode.getNodeY(),
+              endX = node.getNodeX(),
+              endY = node.getNodeY(),
+              dx = endX - startX,
+              dy = endY - startY,
+              stepX = dx * 0.01 * this.ANIMATION_SPEED,
+              stepY = dy * 0.01 * this.ANIMATION_SPEED;
+          
+          node.dx = dx;
+          node.dy = dy;
+          node.stepX = stepX;
+          node.stepY = stepY;
+          node.animating = true;
+        }else if(Math.abs(node.dx) > 0 || node.dy > 0){
+          // Math.abs(node.dx) > 0 && (node.dx -= node.stepX);
+          ((node.dx > 0 && node.stepX > 0) || (node.dx < 0 && node.stepX < 0)) && (node.dx -= node.stepX);
+          
+          node.dy > 0 && (node.dy -= node.stepY);
+        }
+        else {
+          node.dx = 0;
+          node.dy = 0;
+          node.stepX = 0;
+          node.stepY = 0;
+          node.animating = false;
+        }
+
+        let animatingNode = this.treeData.getData().find((n) => n.animating);
+
+        this.animating = !!animatingNode;
+        
+      }
+
+
+      this.drawNode(node);
+    });
+
+    
+    this.drawDebugInfo();
+    
     this.drawControls();
 
-    this.drawDebugInfo();
-
-    this.setCursor();
-
-    requestAnimationFrame(this.startDrawLoop.bind(this));
+    if(animate && this.animating)
+      requestAnimationFrame(this.renderContent.bind(this,true));
   }
 
   /**
@@ -330,6 +379,8 @@ class Tree {
       this.zoomLevel -= 0.1;
       this.reCenterTreeToCursor(ev, "out");
     }
+
+    this.renderContent();
   }
 
   /**
@@ -390,6 +441,10 @@ class Tree {
     this.secondaryState === Tree.states.PANNING && this.pan(ev);
 
     this.mouseContext.updatePosition(ev.x, ev.y);
+
+    this.mouseNodeOverlapDetection();
+
+    this.setCursor();
   }
 
   /**
@@ -411,10 +466,12 @@ class Tree {
     this.panY += this.dy;
 
     console.log(this.dx, this.dy, this.panX, this.panY);
+
+    this.renderContent();
   }
 
   /**
-   * This function detects if the cursor is overlapping any node and sets the state accordingly
+   * This function detects if the cursor is overlapping any element and sets the state accordingly
    */
   mouseNodeOverlapDetection() {
     this.primaryState !== Tree.states.PANNING &&

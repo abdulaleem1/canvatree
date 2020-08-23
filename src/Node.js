@@ -52,6 +52,10 @@ class Node {
     this.order = order;
     this.nodeCenter = null;
     this.connectorCenter = null;
+    this.dx = 0;
+    this.dy = 0;
+    this.stepX = null;
+    this.stepY = null;
   }
 
   /**
@@ -78,7 +82,8 @@ class Node {
    * @returns {Number} - X co-ordinate of a Node
    */
   getNodeX() {
-    return this.x * this.zoomLevel + this.panX; ///  ;
+    const canvasRelativeX = this.x * this.zoomLevel + this.panX;
+    return  canvasRelativeX - this.dx; ///  ;
   }
   /**
    * Returns Node Y
@@ -86,7 +91,7 @@ class Node {
    * @returns {Number} - Y co-ordinate of a Node
    */
   getNodeY() {
-    return this.y * this.zoomLevel + this.panY; // /  ;
+    return this.y * this.zoomLevel + this.panY - this.dy; // /  ;
   }
   /**
    * Returns Node Width
