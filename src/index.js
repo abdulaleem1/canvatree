@@ -84,6 +84,24 @@ let options = {
       parentId: 4,
     }
   ],
-  zoomControl: true,
+  canvasBackgroundColor:"#52b8f4",
+  connectorColor:"#ffffff",
+  nodeStyle:{
+    fillTextColor : "#ffffff",
+    nodeBackgroundColor : "#52b8f4",
+    nodeHoverColor : "#ffffff",
+    nodeStrokeColor:"#ffffff",
+    connectorBackgroundColor : "#52b8f4",
+    connectorHoverColor : "#ffffff",
+    connectorStrokeColor:"#ffffff",
+  }
+  // canvasBackgroundColor:"#fff",
+  // nodeStyle:{
+  //   fillTextColor : "#ffffff",
+  //   nodeBackgroundColor : "#5e6472",
+  //   nodeHoverColor : "grey",
+  //   connectorBackgroundColor : "lightgreen",
+  //   connectorHoverColor : "red"
+  // }
 };
 new Tree("tree", options);

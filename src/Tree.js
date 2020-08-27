@@ -40,8 +40,16 @@ class Tree {
     this.panY = 0;
     this.controls = [];
     this.CONTROLS_RADIUS = 10;
-    this.ANIMATION_SPEED = 3;
-
+    this.ANIMATION_SPEED = 5;
+    this.fillTextColor = options.nodeStyle.fillTextColor;
+    this.nodeBackgroundColor = options.nodeStyle.nodeBackgroundColor;
+    this.nodeHoverColor = options.nodeStyle.nodeHoverColor;
+    this.nodeStrokeColor = options.nodeStyle.nodeStrokeColor;
+    this.connectorBackgroundColor = options.nodeStyle.connectorBackgroundColor;
+    this.connectorHoverColor = options.nodeStyle.connectorHoverColor;
+    this.connectorStrokeColor = options.nodeStyle.connectorStrokeColor;
+    this.canvasBackgroundColor = options.canvasBackgroundColor;
+    this.connectorColor = options.connectorColor;
     if (!this.container) {
       console.error("Element not found!");
     }
@@ -55,8 +63,6 @@ class Tree {
     this.initEvents();
 
     this.primaryState = Tree.states.INITIALIZED;
-
-
 
     // this.setupTree(options.data);
     this.zoomToFit();
@@ -89,7 +95,6 @@ class Tree {
 
     this.context.textAlign = "center";
     this.context.textBaseline = "middle";
-    this.context.fillStyle = "#ffffff";
   }
 
   /**
@@ -103,9 +108,9 @@ class Tree {
       action: () => this.zoomToFit(),
     });
   }
-  
+
   /**
-   *Draw the controls to the canvas 
+   *Draw the controls to the canvas
    */
   drawControls() {
     this.controls.forEach((c) =>
@@ -160,13 +165,19 @@ class Tree {
    *
    *
    */
-  drawNode(node) {
-
-
+  drawNode(node,onHover = false) {
+    // this.context.clearRect(
+    //   node.getNodeX() -1,
+    //   node.getNodeY() -1,
+    //   node.getNodeWidth() +1,
+    //   node.getNodeHeight() + 1
+    // );
 
     //draw node body
     this.context.fillStyle =
-      node.state === Tree.states.NODE_HOVERED ? "grey" : "#5e6472";
+      node.state === Tree.states.NODE_HOVERED
+        ? this.nodeHoverColor
+        : this.nodeBackgroundColor;
     this.context.fillRect(
       node.getNodeX(),
       node.getNodeY(),
@@ -174,17 +185,26 @@ class Tree {
       node.getNodeHeight()
     );
 
-
-    this.context.fillStyle = "#ffffff";
+    this.context.fillStyle =
+    node.state === Tree.states.NODE_HOVERED
+      ? this.nodeBackgroundColor
+      : this.fillTextColor;
     this.context.fillText(`${node.text}`, node.nodeCenter.x, node.nodeCenter.y); //, ${node.level}, ${node.extendedOrder},  ${node.order}
 
-    DrawHelper.fillCircle(
-      this.context,
-      node.connectorCenter.x,
-      node.connectorCenter.y,
-      node.getNodeConnectorRadius(),
-      node.state === Tree.states.CONNECTOR_HOVERED ? "red" : "lightgreen"
+
+    if(!onHover){
+      
+    this.context.strokeStyle = this.nodeStrokeColor;
+    this.context.strokeRect(
+      node.getNodeX(),
+      node.getNodeY(),
+      node.getNodeWidth(),
+      node.getNodeHeight()
     );
+    // console.log(node.getNodeX(), node.getNodeWidth());
+
+
+
 
     if (node.parentId > 0) {
       const parent = this.treeData.getParent(node);
@@ -205,8 +225,36 @@ class Tree {
         parent.connectorCenter.x,
         parent.connectorCenter.y
       );
+      this.context.strokeStyle = this.connectorColor;
+
       this.context.stroke();
     }
+    }else{
+      //only on hover
+      this.context.strokeStyle = this.nodeBackgroundColor;
+      this.context.strokeRect(
+        node.getNodeX(),
+        node.getNodeY(),
+        node.getNodeWidth(),
+        node.getNodeHeight()
+      );
+
+      this.context.strokeStyle = this.nodeStrokeColor;
+    }
+
+    
+    DrawHelper.fillCircle(
+      this.context,
+      node.connectorCenter.x,
+      node.connectorCenter.y,
+      node.getNodeConnectorRadius(),
+      node.state === Tree.states.CONNECTOR_HOVERED
+        ? this.connectorHoverColor
+        : this.connectorBackgroundColor,
+        node.state === Tree.states.CONNECTOR_HOVERED
+        ? this.connectorBackgroundColor
+        : this.connectorStrokeColor
+    );
   }
 
   /**
@@ -228,42 +276,48 @@ class Tree {
    */
   renderContent(animate = false) {
     this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.context.fillStyle = this.canvasBackgroundColor;
+    this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     this.context.font = 20 * this.zoomLevel + "px Montserrat";
-
-
 
     this.treeData.getData().forEach((node) => {
       node.zoomLevel = this.zoomLevel;
       node.panX = this.panX;
       node.panY = this.panY;
-      node.calculateCenter();
 
-      if(animate){
+      if (animate) {
         let rootNode = this.treeData.getRootNode();
-        if(node.stepX === null && node.stepY === null){
-
+        if (node.stepX === null && node.stepY === null) {
           let startX = rootNode.getNodeX(),
-              startY = rootNode.getNodeY(),
-              endX = node.getNodeX(),
-              endY = node.getNodeY(),
-              dx = endX - startX,
-              dy = endY - startY,
-              stepX = dx * 0.01 * this.ANIMATION_SPEED,
-              stepY = dy * 0.01 * this.ANIMATION_SPEED;
-          
+            startY = rootNode.getNodeY(),
+            endX = node.getNodeX(),
+            endY = node.getNodeY(),
+            dx = endX - startX,
+            dy = endY - startY,
+            stepX = dx * 0.01 * this.ANIMATION_SPEED,
+            stepY = dy * 0.01 * this.ANIMATION_SPEED;
+
           node.dx = dx;
           node.dy = dy;
           node.stepX = stepX;
           node.stepY = stepY;
           node.animating = true;
-        }else if(Math.abs(node.dx) > 0 || node.dy > 0){
+        } else if (
+          (node.dx - node.stepX > 0 && node.stepX > 0) ||
+          (node.dx - node.stepX < 0 && node.stepX < 0) ||
+          node.dy - node.stepY > 0
+        ) {
+          //10% acceleration
+          // node.stepX = node.stepX * 1.1;
+          // node.stepY = node.stepY * 1.1;
           // Math.abs(node.dx) > 0 && (node.dx -= node.stepX);
-          ((node.dx > 0 && node.stepX > 0) || (node.dx < 0 && node.stepX < 0)) && (node.dx -= node.stepX);
-          
-          node.dy > 0 && (node.dy -= node.stepY);
-        }
-        else {
+          ((node.dx - node.stepX > 0 && node.stepX > 0) ||
+            (node.dx - node.stepX < 0 && node.stepX < 0)) &&
+            (node.dx -= node.stepX);
+
+          node.dy - node.stepY > 0 && (node.dy -= node.stepY);
+        } else {
           node.dx = 0;
           node.dy = 0;
           node.stepX = 0;
@@ -274,20 +328,18 @@ class Tree {
         let animatingNode = this.treeData.getData().find((n) => n.animating);
 
         this.animating = !!animatingNode;
-        
       }
 
-
+      node.calculateCenter();
       this.drawNode(node);
     });
 
-    
     this.drawDebugInfo();
-    
+
     this.drawControls();
 
-    if(animate && this.animating)
-      requestAnimationFrame(this.renderContent.bind(this,true));
+    if (animate && this.animating)
+      requestAnimationFrame(this.renderContent.bind(this, true));
   }
 
   /**
@@ -477,6 +529,10 @@ class Tree {
     this.primaryState !== Tree.states.PANNING &&
       (this.primaryState = Tree.states.IDLE);
     this.treeData.getData().forEach((node) => {
+      let redraw = false;
+      if (node.state !== Tree.states.IDLE) {
+        redraw = true;
+      }
       node.state = Tree.states.IDLE;
       if (
         this.mouseContext.x > node.getNodeX() &&
@@ -497,7 +553,10 @@ class Tree {
         distance <= node.connectorRadius &&
           ((node.state = Tree.states.CONNECTOR_HOVERED),
           (this.primaryState = Tree.states.CONNECTOR_HOVERED));
+
+        redraw = true;
       }
+      if (redraw) this.drawNode(node,node.state === Tree.states.NODE_HOVERED);
     });
 
     for (let i = 0; i < this.controls.length; i++) {
